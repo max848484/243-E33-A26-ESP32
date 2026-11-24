@@ -18,19 +18,17 @@
 
 #include <Arduino.h>
 #include "BLE.h"
-
+#include "uart.h"
+#include "commBLEMeteo.h"
 
 //defines pour le/les GPIOs utilisés
 #define GPIO_USB_DM 18
-
-//variables globales et #defines nécessaires au décodage du UART
-#define RX_BUFFER_SIZE 128
 
 //variables globales et #defines nécessaires aux mesures
 uint16_t temperature_u16 = 200;
 
 //Prototype de fonction
-bool lireUART(char *rxBuffer);
+
 
 
 /*
@@ -68,10 +66,12 @@ void loop() {
     nomRecu = lireUART(rxBuffer);
 
     if (true == nomRecu){
-      Serial.print("Trame reçue 3: ");
-      Serial.println((char*)rxBuffer);      
-      initBLE(rxBuffer);
-      startTemperaCharacteristic();
+      Serial.print("Trame reçue: ");
+      Serial.println((char*)rxBuffer);
+      
+      analyseTrame(rxBuffer);
+      //initBLE(rxBuffer);
+      //startTemperaCharacteristic();
 
     }
   }
@@ -82,41 +82,7 @@ void loop() {
   }
 }
 
-/*
-  La fonction lireUART() lit les données reçues sur le port série UART et les enregistre dans rxBuffer.
-  Elle retourne true si le caractère de fin de trame (\n - 0x0A) a été reçu, sinon false.
-*/
-bool lireUART(char *rxBuffer) {
-  static uint8_t rxIndex = 0;
-  bool rxCompleted = false;
 
-
-  while (Serial.available() > 0) {
-    char c = (char)Serial.read();
-
-    if (c == '\r') {
-      continue;   // ignorer le retour chariot
-    }
-
-    if (c == '\n') {
-      rxBuffer[rxIndex] = '\0';  // fin de chaîne
-      rxIndex = 0;
-      rxCompleted = true;
-      break;  // sortir de la boucle while
-    }
-
-    if (rxIndex < RX_BUFFER_SIZE - 1) {
-      rxBuffer[rxIndex] = c;
-      rxIndex ++;
-    } 
-    else {
-      rxIndex = 0;
-      break;  // buffer plein, on ignore le reste de la trame;
-    }
-  }
-
-  return rxCompleted;
-}
 
 
 
