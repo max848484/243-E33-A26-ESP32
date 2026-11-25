@@ -12,7 +12,12 @@ BLEServer *pServer = NULL;
 BLEService *bmeService = NULL;
 
 BLECharacteristic temperaCharacteristic(BLEUUID((uint16_t)0x2A6E), BLECharacteristic::PROPERTY_READ);
-uint16_t bufMax = 200;
+BLECharacteristic humiditeCharacteristic(BLEUUID((uint16_t)0x2A6F), BLECharacteristic::PROPERTY_READ);
+BLECharacteristic ventVitCharacteristic(BLEUUID((uint16_t)0x2A70), BLECharacteristic::PROPERTY_READ);
+BLECharacteristic ventDirCharacteristic(BLEUUID((uint16_t)0x2A71), BLECharacteristic::PROPERTY_READ);
+BLECharacteristic pluieCharacteristic(BLEUUID((uint16_t)0x2731), BLECharacteristic::PROPERTY_READ);
+BLECharacteristic luminoCharacteristic(BLEUUID((uint16_t)0x2A78), BLECharacteristic::PROPERTY_READ);
+uint16_t defaultValue = 101;
 //BLEDescriptor temperaDescriptor(BLEUUID((uint16_t)0x2902));
 
 /* 
@@ -58,25 +63,123 @@ void initBLE(char *rxBuffer){
 /*
   Cette fonction crée la caractéristique de température et l'associe au service BLE.
 */
-void startTemperaCharacteristic(void) {
+void startBleTempera(void) {
 
   if (bmeService != nullptr) {
     // Create BLE Characteristics and corresponding Descriptors
     bmeService->addCharacteristic(&temperaCharacteristic);
     //temperaCharacteristic.addDescriptor(&temperaDescriptor);
 
+    //bmeService->addCharacteristic(&humiditeCharacteristic);
+
     // Start the service
     bmeService->start();
 
-    temperaCharacteristic.setValue(bufMax);
+    temperaCharacteristic.setValue(defaultValue);
   }
 }
 
-void setTemperaCharacteristicValue(uint16_t value) {
+
+/*
+  Cette fonction crée la caractéristique de vitesse de vent et l'associe au service BLE.
+*/
+void startBleVentVit(void) {
+
+  if (bmeService != nullptr) {
+    // Create BLE Characteristics and corresponding Descriptors
+    bmeService->addCharacteristic(&ventVitCharacteristic);
+    //temperaCharacteristic.addDescriptor(&temperaDescriptor);
+
+    // Start the service
+    bmeService->start();
+
+    ventVitCharacteristic.setValue(defaultValue);
+  }
+}
+
+/*
+  Cette fonction crée la caractéristique de direction de vent et l'associe au service BLE.
+*/
+void startBleVentDir(void) {
+
+  if (bmeService != nullptr) {
+    // Create BLE Characteristics and corresponding Descriptors
+    bmeService->addCharacteristic(&ventDirCharacteristic);
+    //temperaCharacteristic.addDescriptor(&temperaDescriptor);
+
+    // Start the service
+    bmeService->start();
+
+    ventDirCharacteristic.setValue(defaultValue);
+  }
+}
+
+/*
+  Cette fonction crée la caractéristique de pluie et l'associe au service BLE.
+*/
+void startBlePluie(void) {
+
+  if (bmeService != nullptr) {
+    // Create BLE Characteristics and corresponding Descriptors
+    bmeService->addCharacteristic(&pluieCharacteristic);
+    //temperaCharacteristic.addDescriptor(&temperaDescriptor);
+
+    // Start the service
+    bmeService->start();
+
+    pluieCharacteristic.setValue(defaultValue);
+  }
+}
+
+/*
+  Cette fonction crée la caractéristique de luminosité et l'associe au service BLE.
+*/
+void startBleLumino(void) {
+
+  if (bmeService != nullptr) {
+    // Create BLE Characteristics and corresponding Descriptors
+    bmeService->addCharacteristic(&luminoCharacteristic);
+    //temperaCharacteristic.addDescriptor(&temperaDescriptor);
+
+    // Start the service
+    bmeService->start();
+
+    luminoCharacteristic.setValue(defaultValue);
+  }
+}
+
+
+void setBleTempera(uint16_t value) {
   if (bmeService != nullptr) {
     temperaCharacteristic.setValue(value);
   }
 }
+
+
+void setBleVentVit(uint16_t value) {
+  if (bmeService != nullptr) {
+    ventVitCharacteristic.setValue(value);
+  }
+}
+
+void setBleVentDir(uint16_t value) {
+  if (bmeService != nullptr) {
+    ventDirCharacteristic.setValue(value);
+  }
+}
+
+void setBlePluie(uint16_t value) {
+  if (bmeService != nullptr) {
+    pluieCharacteristic.setValue(value);
+  }
+}
+
+void setBleLumino(uint16_t value) {
+  if (bmeService != nullptr) {
+    luminoCharacteristic.setValue(value);
+  }
+}
+
 
 
 

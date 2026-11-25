@@ -6,7 +6,7 @@
 */
 #include "commBLEMeteo.h"
 
-
+typeMesure monTypeService = NON_DEFINI;
 
 
 /*
@@ -18,8 +18,13 @@ uint8_t analyseTrame(char *rxMessage){
   uint16_t index = 0;
   etatTrame monEtat = ETAT_INIT;
   uint8_t longueurChamp = 0;
+  char nomEquipe[RX_BUFFER_SIZE] = {'\0'};
+  bool analyseComplete = false;
+  char strValue[RX_BUFFER_SIZE] = {'\0'};
+  int value = 0;
+  typeMesure typeData = NON_DEFINI;
 
-  while((rxMessage[index] != '\0') && (index < RX_BUFFER_SIZE)){
+  while(rxMessage[index] != '\0'){
 
 
     switch(monEtat){
@@ -75,25 +80,202 @@ uint8_t analyseTrame(char *rxMessage){
         }
         break;
 
+      case ETAT_START:
+        monErreur = supprimeSeparateur(rxMessage, index, &longueurChamp);
+        if (monErreur != SUCCES){
+          break; // on a rencontré une erreur, on sort.
+        }
+
+        strncpy(nomEquipe, &rxMessage[index], longueurChamp);
+        index = index + longueurChamp;
+        printf("strncpy complété !\n");
+        monEtat = ETAT_CONFIG_TYPE;
+        break;
+
+      case ETAT_CONFIG_TYPE:
+        monErreur = supprimeSeparateur(rxMessage, index, &longueurChamp);
+        if (monErreur != SUCCES){
+          break; // on a rencontré une erreur, on sort.
+        }
+
+        if (strcmp(&rxMessage[index], "TEMP") == 0){
+          monTypeService = TEMP;
+          index = index + longueurChamp;
+          monEtat = ETAT_CONFIG_CHECKSUM;
+        }
+        else if (strcmp(&rxMessage[index], "VENT_VIT") == 0){
+          monTypeService = VENT_VIT;
+          index = index + longueurChamp;
+          monEtat = ETAT_CONFIG_CHECKSUM;
+        }
+        else{
+          monErreur = ERR_TYPE_MESURE;
+        }
+
+        break;
+
+      case ETAT_CONFIG_CHECKSUM:
+
+        if (false == verifyChecksum(rxMessage, index)){
+          monErreur = ERR_CHECKSUM;
+        }
+        else{
+          monEtat = ETAT_START_BLE;
+        }
+        break;
+      case ETAT_START_BLE:
+
+        initBLE(nomEquipe);
 
 
+        if (TEMP == monTypeService){
+          startBleTempera();
+        }
+        else if (VENT_VIT == monTypeService){
+          startBleVentVit();
+        }
+        else if (VENT_DIR == monTypeService){
+          startBleVentDir();
+        }
+        else if (PLUIE == monTypeService){
+          startBlePluie();
+        }
+        else if (LUM == monTypeService){
+          startBleLumino();
+        }    
+        analyseComplete = true;
+        break;
+        
+      case ETAT_DATA:
+
+        if (NON_DEFINI == monTypeService){
+          monErreur = ERR_BLE_NOT_STARTED;
+          break;
+        }
+
+        monErreur = supprimeSeparateur(rxMessage, index, &longueurChamp);
+        if (monErreur != SUCCES){
+          break; // on a rencontré une erreur, on sort.
+        }        
+
+        if (strcmp(&rxMessage[index], "TEMP") == 0){
+          if (TEMP != monTypeService){
+            monErreur = ERR_SERVICE_NOT_STARTED;
+            break;
+          }
+          typeData = TEMP;
+          index = index + longueurChamp;
+          monEtat = ETAT_VALEUR;
+        }
+        else if(strcmp(&rxMessage[index], "HUM") == 0){
+          if (TEMP != monTypeService){
+            monErreur = ERR_SERVICE_NOT_STARTED;
+            break;
+          }          
+          typeData = HUM;
+          index = index + longueurChamp;
+          monEtat = ETAT_VALEUR;
+        }
+        else if(strcmp(&rxMessage[index], "VENT_VIT") == 0){
+          if (VENT_VIT != monTypeService){
+            monErreur = ERR_SERVICE_NOT_STARTED;
+            break;
+          }          
+          index = index + longueurChamp;
+          monEtat = ETAT_VALEUR;
+        }
+        else if(strcmp(&rxMessage[index], "VENT_DIR") == 0){
+          if (VENT_DIR != monTypeService){
+            monErreur = ERR_SERVICE_NOT_STARTED;
+            break;
+          }              
+          index = index + longueurChamp;
+          monEtat = ETAT_VALEUR;
+        }
+        else if(strcmp(&rxMessage[index], "PLUIE") == 0){
+          if (PLUIE != monTypeService){
+            monErreur = ERR_SERVICE_NOT_STARTED;
+            break;
+          }           
+          index = index + longueurChamp;
+          monEtat = ETAT_VALEUR;
+        }
+        else if(strcmp(&rxMessage[index], "LUM") == 0){
+          if (LUM != monTypeService){
+            monErreur = ERR_SERVICE_NOT_STARTED;
+            break;
+          }             
+          index = index + longueurChamp;
+          monEtat = ETAT_VALEUR;
+        }    
+        else{
+          monErreur = ERR_TYPE_MESURE;
+        }    
+        
+        break;
+      case ETAT_VALEUR:
+        monErreur = supprimeSeparateur(rxMessage, index, &longueurChamp);
+        if (monErreur != SUCCES){
+          break; // on a rencontré une erreur, on sort.
+        }
+
+        strncpy(strValue, &rxMessage[index], longueurChamp);
+        index = index + longueurChamp;
+        monEtat = ETAT_DATA_CHECKSUM;
+        break;      
+
+      case ETAT_DATA_CHECKSUM:
+
+        if (false == verifyChecksum(rxMessage, index)){
+          monErreur = ERR_CHECKSUM;
+        }
+        else{
+          monEtat = ETAT_SET_VALUE;
+        }
+        break;
+
+      case ETAT_SET_VALUE:
+        value = (int) strtol(strValue, NULL, 16);
+        if (TEMP == monTypeService){
+          if (TEMP == typeData){
+            setBleTempera(value);
+          }
+          else if (HUM == typeData){
+            //setBleHum(value);
+          }
+        }
+        else if (VENT_VIT == monTypeService){
+          setBleVentVit(value);
+        }
+        else if (VENT_DIR == monTypeService){
+          setBleVentDir(value);
+        }        
+        else if (PLUIE == monTypeService){
+          setBleVentDir(value);
+        }    
+        else if (LUM == monTypeService){
+          setBleVentDir(value);
+        }    
+        analyseComplete = true;
+        break;          
+        
       default:
         break;
     }
 
     index++;
 
-    if (monErreur != SUCCES) {
-      // on a rencontré une erreur, on sort de la boucle while
+    if (index >= RX_BUFFER_SIZE) {
+      monErreur = ERR_FIN_TRAME1; // erreur de fin de trame
+    }
+
+    if ((monErreur != SUCCES) || (true == analyseComplete)) {
+      // Dans un cas ou l'autre, on sort de la boucle while
       break;
     }
   }
 
-  if (index >= RX_BUFFER_SIZE) {
-    monErreur = ERR_FIN_TRAME1; // erreur de fin de trame
-  }
-  
-  printf("sortie de la fonction analyseTrame\n");
+  printf("sortie de la fonction analyseTrame, monErreur == %d\n", monErreur);
   return(monErreur);
 }
 
@@ -128,4 +310,50 @@ erreurTrame supprimeSeparateur(char *rxMessage, uint16_t index, uint8_t *longueu
 
 return monErreur;
 }
+
+
+/*
+  Cette fonction récupère le checksum reçu, calcul le checksum attendu et détermine si la trame est 
+  valide.
+  Paramètres:
+    - rxMessage: le message à analyser
+    - index: l'index de départ pour la recherche du séparateur  
+  retourne true si le checksum est valide, false dans le cas contraire.
+  
+*/
+bool verifyChecksum(char *rxMessage, uint16_t indexFin){
+
+  if ((indexFin + 1) >= RX_BUFFER_SIZE){
+    //Return erreur fin de trame
+    return false;
+  }
+
+  char ccheckSumReceived[3] = {rxMessage[indexFin], rxMessage[indexFin+1], '\0'};
+  int icheckSumReceived = (int) strtol(ccheckSumReceived, NULL, 16);
+  int icheckSumComputed = 0;
+  uint16_t i = 0;
+
+  while('$' != rxMessage[i]){
+    i = i +1;
+  }
+
+  //Une fois le '$' trouvé, on incrémente l'index de 1 puisqu'on l'exclue du calcul
+  i = i +1; 
+
+
+  while(i <= (indexFin-2)){
+    icheckSumComputed ^= rxMessage[i];
+    i = i +1;
+  }
+
+  if (icheckSumComputed == icheckSumReceived){
+    return true;
+  }
+  else{
+    //printf("\nchecksum false !  icheckSumComputed =%i -  icheckSumReceived = %i", icheckSumComputed, icheckSumReceived);
+    return false;
+  }
+
+}
+
 

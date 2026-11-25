@@ -19,8 +19,19 @@
 
 //Prototype de fonction
 void initBLE(char *rxBuffer);
-void startTemperaCharacteristic(void);
-void setTemperaCharacteristicValue(uint16_t value);
+void startBleTempera(void);
+void startBleVentVit(void);
+void startBleVentDir(void);
+void startBlePluie(void);
+void startBleLumino(void);
+
+void setBleTempera(uint16_t value);
+void setBleVentVit(uint16_t value);
+void setBleVentDir(uint16_t value);
+void setBlePluie(uint16_t value);
+void setBleLumino(uint16_t value);
+
+
 void deviceDisconnected(void);
 
 

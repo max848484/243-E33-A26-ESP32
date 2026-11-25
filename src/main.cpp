@@ -42,6 +42,8 @@ void setup() {
   // Configure GPIO_USB_DM en sortie niveau logique haut - pour debug seulement
   pinMode(GPIO_USB_DM, OUTPUT);
   digitalWrite(GPIO_USB_DM, HIGH);
+
+  Serial.println("Le code démarre ");
 }
 
 
@@ -61,6 +63,7 @@ void loop() {
     delay(500);
   }
 
+  //TODO: Il faut modifier le code ci-bas: seul le premier message reçu est décodé actuellement...
   if (false == nomRecu) {
     // Lire les données reçues sur le port série UART
     nomRecu = lireUART(rxBuffer);
@@ -77,7 +80,7 @@ void loop() {
   }
   else{
     temperature_u16 = temperature_u16 + 100;
-    setTemperaCharacteristicValue(temperature_u16);
+    //setTemperaCharacteristicValue(temperature_u16);
     //temperaCharacteristic.setValue(temperature_u16);
   }
 }
