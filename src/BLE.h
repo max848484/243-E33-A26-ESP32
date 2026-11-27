@@ -25,7 +25,10 @@ void startBleVentDir(void);
 void startBlePluie(void);
 void startBleLumino(void);
 
+
+
 void setBleTempera(uint16_t value);
+void setBleHum(uint16_t value);
 void setBleVentVit(uint16_t value);
 void setBleVentDir(uint16_t value);
 void setBlePluie(uint16_t value);
@@ -33,6 +36,8 @@ void setBleLumino(uint16_t value);
 
 
 void deviceDisconnected(void);
+
+//void clearBLE(void);
 
 
 #endif //BLE_H

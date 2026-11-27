@@ -24,14 +24,13 @@ uint8_t analyseTrame(char *rxMessage){
   int value = 0;
   typeMesure typeData = NON_DEFINI;
 
-  while(rxMessage[index] != '\0'){
+  while(true){
 
 
     switch(monEtat){
       case ETAT_INIT:
         if(rxMessage[index] == '$'){
           monEtat = ETAT_DEBUT_TROUVE;
-          printf("Début de trame trouvé\n");
         }
         else{
           // on reste dans l'état ETAT_INIT, on va continuer à chercher le début de trame
@@ -45,7 +44,6 @@ uint8_t analyseTrame(char *rxMessage){
         }
 
         if (strcmp(&rxMessage[index], "CONFIG") == 0){
-          printf("Trame CONFIG reçue\n");
           index = index + longueurChamp;
           monEtat = ETAT_CONFIG;
         }
@@ -66,16 +64,10 @@ uint8_t analyseTrame(char *rxMessage){
         }
 
         if (strcmp(&rxMessage[index], "START") == 0){
-          printf("Trame START reçue\n");
           index = index + longueurChamp;
           monEtat = ETAT_START;
         }
-        else if(strcmp(&rxMessage[index], "STOP") == 0){
-          index = index + longueurChamp;
-          monEtat = ETAT_STOP;
-        }
         else{
-          printf("Erreur de nom de trame");
           monErreur = ERR_NOM_COMMANDE;
         }
         break;
@@ -88,7 +80,6 @@ uint8_t analyseTrame(char *rxMessage){
 
         strncpy(nomEquipe, &rxMessage[index], longueurChamp);
         index = index + longueurChamp;
-        printf("strncpy complété !\n");
         monEtat = ETAT_CONFIG_TYPE;
         break;
 
@@ -108,6 +99,11 @@ uint8_t analyseTrame(char *rxMessage){
           index = index + longueurChamp;
           monEtat = ETAT_CONFIG_CHECKSUM;
         }
+        else if (strcmp(&rxMessage[index], "PLUIE") == 0){
+          monTypeService = PLUIE;
+          index = index + longueurChamp;
+          monEtat = ETAT_CONFIG_CHECKSUM;
+        }        
         else{
           monErreur = ERR_TYPE_MESURE;
         }
@@ -157,6 +153,8 @@ uint8_t analyseTrame(char *rxMessage){
         if (monErreur != SUCCES){
           break; // on a rencontré une erreur, on sort.
         }        
+
+        //printf("test ETAT_DATA &rxMessage[index]==%s\n", &rxMessage[index]);
 
         if (strcmp(&rxMessage[index], "TEMP") == 0){
           if (TEMP != monTypeService){
@@ -235,26 +233,27 @@ uint8_t analyseTrame(char *rxMessage){
         break;
 
       case ETAT_SET_VALUE:
-        value = (int) strtol(strValue, NULL, 16);
+        value = (int) strtol(strValue, NULL, 10);
+        
         if (TEMP == monTypeService){
           if (TEMP == typeData){
-            setBleTempera(value);
+            setBleTempera(value * 100);
           }
           else if (HUM == typeData){
-            //setBleHum(value);
+            setBleHum(value*100);
           }
         }
         else if (VENT_VIT == monTypeService){
-          setBleVentVit(value);
+          setBleVentVit(value*100);
         }
         else if (VENT_DIR == monTypeService){
           setBleVentDir(value);
         }        
         else if (PLUIE == monTypeService){
-          setBleVentDir(value);
+          setBlePluie(value);
         }    
         else if (LUM == monTypeService){
-          setBleVentDir(value);
+          setBleLumino(value);
         }    
         analyseComplete = true;
         break;          
@@ -263,30 +262,42 @@ uint8_t analyseTrame(char *rxMessage){
         break;
     }
 
-    index++;
+    index = index +1;
 
     if (index >= RX_BUFFER_SIZE) {
       monErreur = ERR_FIN_TRAME1; // erreur de fin de trame
+    }
+    else if ((rxMessage[index] == '\0') && (false == analyseComplete)){
+      //Erreur fin de trame, on a atteint la fin du message alors que ce n'était pas attendu.
+      monErreur = ERR_FIN_TRAME2; // erreur de fin de trame
     }
 
     if ((monErreur != SUCCES) || (true == analyseComplete)) {
       // Dans un cas ou l'autre, on sort de la boucle while
       break;
     }
+    
+
   }
 
-  printf("sortie de la fonction analyseTrame, monErreur == %d\n", monErreur);
+  if (SUCCES == monErreur){
+    printf("ok\n");
+  }
+  else{
+    printf("err %d\n", monErreur);
+  }
+
   return(monErreur);
 }
 
 /*
-  Cette fonction trouve le prochain séprateur (point-virgule ou *) dans le message rxMessage et le 
-  remplace par '\0' (fin de chaîne).
+  Cette fonction trouve le prochain séprateur (point-virgule ou * ou =) dans le message rxMessage 
+  et le remplace par '\0' (fin de chaîne).
   Paramètres:
     - rxMessage: le message à analyser
     - index: l'index de départ pour la recherche du séparateur
     - longueurChamp: un pointeur vers une variable qui contiendra la longueur du champ trouvé
-  Retourne erreurTrame, SUCCES si un séparateur a été trouvé, sinon ERR_FIN_TRAME1
+  Retourne erreurTrame, SUCCES si un séparateur a été trouvé, sinon ERR_FIN_TRAME
 */
 erreurTrame supprimeSeparateur(char *rxMessage, uint16_t index, uint8_t *longueurChamp){
   erreurTrame monErreur;
@@ -294,12 +305,13 @@ erreurTrame supprimeSeparateur(char *rxMessage, uint16_t index, uint8_t *longueu
   index = index + 1;
   *longueurChamp = 1;
 
-  while((rxMessage[index] != ';') && (rxMessage[index] != '*') && (index < RX_BUFFER_SIZE)){
+  while((rxMessage[index] != ';') && (rxMessage[index] != '*') 
+  && (rxMessage[index] != '=') && (index < RX_BUFFER_SIZE)){
     index = index + 1;
     *longueurChamp = *longueurChamp + 1;
   }
 
-  if ((rxMessage[index] == ';') || (rxMessage[index] == '*')){
+  if ((rxMessage[index] == ';') || (rxMessage[index] == '*') || (rxMessage[index] == '=')){
     rxMessage[index] = '\0';
     monErreur = SUCCES;
   }
@@ -350,7 +362,9 @@ bool verifyChecksum(char *rxMessage, uint16_t indexFin){
     return true;
   }
   else{
-    //printf("\nchecksum false !  icheckSumComputed =%i -  icheckSumReceived = %i", icheckSumComputed, icheckSumReceived);
+    //TODO: commenter la ligne suivante avant la relâche
+    printf("\nchecksum false !  icheckSumComputed =0x%x -  icheckSumReceived = 0x%x\n", 
+      icheckSumComputed, icheckSumReceived);
     return false;
   }
 

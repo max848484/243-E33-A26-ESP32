@@ -34,6 +34,7 @@ bool lireUART(char *rxBuffer) {
       rxIndex ++;
     } 
     else {
+      rxBuffer[rxIndex - 1] = '\0';  // fin de chaîne
       rxIndex = 0;
       break;  // buffer plein, on ignore le reste de la trame;
     }

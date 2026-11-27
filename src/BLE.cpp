@@ -11,12 +11,24 @@ bool deviceConnected = false;
 BLEServer *pServer = NULL;
 BLEService *bmeService = NULL;
 
-BLECharacteristic temperaCharacteristic(BLEUUID((uint16_t)0x2A6E), BLECharacteristic::PROPERTY_READ);
-BLECharacteristic humiditeCharacteristic(BLEUUID((uint16_t)0x2A6F), BLECharacteristic::PROPERTY_READ);
-BLECharacteristic ventVitCharacteristic(BLEUUID((uint16_t)0x2A70), BLECharacteristic::PROPERTY_READ);
-BLECharacteristic ventDirCharacteristic(BLEUUID((uint16_t)0x2A71), BLECharacteristic::PROPERTY_READ);
-BLECharacteristic pluieCharacteristic(BLEUUID((uint16_t)0x2731), BLECharacteristic::PROPERTY_READ);
-BLECharacteristic luminoCharacteristic(BLEUUID((uint16_t)0x2A78), BLECharacteristic::PROPERTY_READ);
+BLECharacteristic temperaCharacteristic(BLEUUID((uint16_t)0x2A6E), 
+  BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+
+BLECharacteristic humiditeCharacteristic(BLEUUID((uint16_t)0x2A6F), 
+  BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+
+BLECharacteristic ventVitCharacteristic(BLEUUID((uint16_t)0x2A70), 
+  BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+
+BLECharacteristic ventDirCharacteristic(BLEUUID((uint16_t)0x2A71), 
+  BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+
+BLECharacteristic pluieCharacteristic(BLEUUID((uint16_t)0x2A78), 
+  BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+
+BLECharacteristic luminoCharacteristic(BLEUUID((uint16_t)0x2731), 
+  BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  
 uint16_t defaultValue = 101;
 //BLEDescriptor temperaDescriptor(BLEUUID((uint16_t)0x2902));
 
@@ -27,11 +39,11 @@ uint16_t defaultValue = 101;
 class MyServerCallbacks: public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) {
     deviceConnected = true;
-    Serial.println("Device Connected");
+    //Serial.println("Device Connected");
   };
   void onDisconnect(BLEServer* pServer) {
     deviceConnected = false;
-    Serial.println("Device Disconnected");
+    //Serial.println("Device Disconnected");
   }
 };
 
@@ -45,7 +57,6 @@ void initBLE(char *rxBuffer){
 
   // Create the BLE Device
   BLEDevice::init(rxBuffer);
-  //BLEDevice::init(bleServerName);
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -70,12 +81,13 @@ void startBleTempera(void) {
     bmeService->addCharacteristic(&temperaCharacteristic);
     //temperaCharacteristic.addDescriptor(&temperaDescriptor);
 
-    //bmeService->addCharacteristic(&humiditeCharacteristic);
+    bmeService->addCharacteristic(&humiditeCharacteristic);
 
     // Start the service
     bmeService->start();
 
     temperaCharacteristic.setValue(defaultValue);
+    humiditeCharacteristic.setValue(defaultValue);
   }
 }
 
@@ -149,9 +161,16 @@ void startBleLumino(void) {
 }
 
 
+
 void setBleTempera(uint16_t value) {
   if (bmeService != nullptr) {
     temperaCharacteristic.setValue(value);
+  }
+}
+
+void setBleHum(uint16_t value) {
+  if (bmeService != nullptr) {
+    humiditeCharacteristic.setValue(value);
   }
 }
 
@@ -205,3 +224,30 @@ void deviceDisconnected(void){
 
   pServer->getAdvertising()->stop(); // Stop advertising
 }
+
+
+/*
+  Cette fonction arrête le serveur BLE et efface tous les services.
+
+  Cette fonction cause un problème 
+  [106010][E][BLECharacteristic.cpp:82] executeCreate(): Characteristic already has a handle. 
+  
+  ça semble plus compliqué que prévu d'arrêter le serveur, j'abandonne cet option
+*/
+/*
+void clearBLE(void){
+
+  // Stop advertising
+  pServer->getAdvertising()->stop(); 
+
+  // Stop the service
+  bmeService->stop();
+
+  //Dump details of this BLE GATT service
+  bmeService->dump();
+
+  BLEDevice::deinit(false);
+
+  delay(1000);
+}
+  */

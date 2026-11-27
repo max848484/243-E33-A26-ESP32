@@ -43,7 +43,7 @@ void setup() {
   pinMode(GPIO_USB_DM, OUTPUT);
   digitalWrite(GPIO_USB_DM, HIGH);
 
-  Serial.println("Le code démarre ");
+  Serial.println("MODULE BLE PRET");
 }
 
 
@@ -60,9 +60,14 @@ void loop() {
   //Boucle qui fait clignotter un gpio au début de loop() pour indiquer que le code est vie
   for(uint8_t i = 0; i < 5; i++){
     digitalWrite(GPIO_USB_DM, !digitalRead(GPIO_USB_DM));
-    delay(500);
+    delay(10);
   }
 
+  if (true == lireUART(rxBuffer)){
+    analyseTrame(rxBuffer);
+  }
+
+  /*
   //TODO: Il faut modifier le code ci-bas: seul le premier message reçu est décodé actuellement...
   if (false == nomRecu) {
     // Lire les données reçues sur le port série UART
@@ -83,6 +88,7 @@ void loop() {
     //setTemperaCharacteristicValue(temperature_u16);
     //temperaCharacteristic.setValue(temperature_u16);
   }
+    */
 }
 
 
