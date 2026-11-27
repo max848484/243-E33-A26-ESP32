@@ -99,11 +99,21 @@ uint8_t analyseTrame(char *rxMessage){
           index = index + longueurChamp;
           monEtat = ETAT_CONFIG_CHECKSUM;
         }
+        else if (strcmp(&rxMessage[index], "VENT_DIR") == 0){
+          monTypeService = VENT_DIR;
+          index = index + longueurChamp;
+          monEtat = ETAT_CONFIG_CHECKSUM;
+        }        
         else if (strcmp(&rxMessage[index], "PLUIE") == 0){
           monTypeService = PLUIE;
           index = index + longueurChamp;
           monEtat = ETAT_CONFIG_CHECKSUM;
-        }        
+        }
+        else if (strcmp(&rxMessage[index], "LUM") == 0){
+          monTypeService = LUM;
+          index = index + longueurChamp;
+          monEtat = ETAT_CONFIG_CHECKSUM;
+        }               
         else{
           monErreur = ERR_TYPE_MESURE;
         }
@@ -247,13 +257,13 @@ uint8_t analyseTrame(char *rxMessage){
           setBleVentVit(value*100);
         }
         else if (VENT_DIR == monTypeService){
-          setBleVentDir(value);
+          setBleVentDir(value*100);
         }        
         else if (PLUIE == monTypeService){
           setBlePluie(value);
         }    
         else if (LUM == monTypeService){
-          setBleLumino(value);
+          setBleLumino(value*100);
         }    
         analyseComplete = true;
         break;          

@@ -26,9 +26,9 @@ BLECharacteristic ventDirCharacteristic(BLEUUID((uint16_t)0x2A71),
 BLECharacteristic pluieCharacteristic(BLEUUID((uint16_t)0x2A78), 
   BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
 
-BLECharacteristic luminoCharacteristic(BLEUUID((uint16_t)0x2731), 
+BLECharacteristic luminoCharacteristic(BLEUUID((uint16_t)0x2AFB), 
   BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  
+
 uint16_t defaultValue = 101;
 //BLEDescriptor temperaDescriptor(BLEUUID((uint16_t)0x2902));
 
@@ -193,7 +193,7 @@ void setBlePluie(uint16_t value) {
   }
 }
 
-void setBleLumino(uint16_t value) {
+void setBleLumino(uint32_t value) {
   if (bmeService != nullptr) {
     luminoCharacteristic.setValue(value);
   }

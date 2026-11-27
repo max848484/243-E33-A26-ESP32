@@ -32,7 +32,7 @@ void setBleHum(uint16_t value);
 void setBleVentVit(uint16_t value);
 void setBleVentDir(uint16_t value);
 void setBlePluie(uint16_t value);
-void setBleLumino(uint16_t value);
+void setBleLumino(uint32_t value);
 
 
 void deviceDisconnected(void);
